@@ -1,1 +1,103 @@
-# TensorACO
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/evox_logo_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./assets/evox_logo_light.png">
+    <img alt="EvoX Logo" height="50" src="./assets/evox_logo_light.png">
+  </picture>
+  <br>
+</h1>
+<p align="center">
+🌟 TensorACO: Tensorized Ant Colony Optimization for GPU Acceleration 🌟
+</p>
+
+
+<p align="center">
+  <a href="https://arxiv.org/">
+    <img src="https://img.shields.io/badge/paper-arxiv-red?style=for-the-badge" alt="TensorRVEA Paper on arXiv">
+  </a>
+</p>
+Tensorized Ant Colony Optimization (TensorACO) enhances the convergence speed and efficient of large-scale Traveling Salesman Problems (TSP) by incorporating GPU acceleration.  By tensorizing the ant system and path, TensorACO capitalizes on GPU parallelism for accelerated computation. Additionally, the Adaptive Independent Roulette (AdaIR) method enhances the performance by a dynamically strategy. TensorACO is compatible with the [EvoX](https://github.com/EMI-Group/evox/) framewrok.
+
+## Key Features
+
+---
+
+- **GPU Acceleration** 💻: Leverages GPUs for enhanced computational capabilities.
+
+- **Large-Scale Optimization** 📈: Ideal for large ant colony sizes and large city sizes.
+
+- **Real-World Applications** 🌐: Suited for TSP, a central challenge in combinatorial optimization, is characterized by the theoretical complexity and practical relevance in routing and logistics.
+
+## Requirements
+
+---
+
+TensorACO requires:
+
+- Python (version >= 3.7)
+- evox (version >= 0.7.0)
+- JAX (version >= 0.4.16)
+- jaxlib (version >= 0.3.0)
+- (Optional) CUDA and cuDNN for GPU acceleration
+
+## Example Usage
+
+---
+
+```python
+import time
+import jax
+import jax.numpy as jnp
+import algorithm
+from algorithm import TensorACOEVOX
+
+
+def run_tensaco(algorithm, key):
+    state = TensorACOEVOX.setup(algorithm, key)
+
+    for i in range(100):
+
+        offspring, state = TensorACOEVOX.ask(algorithm, state)
+        state = TensorACOEVOX.tell(algorithm, offspring, state)
+        print("The distance is ", state['best_length'])
+
+
+if __name__ == '__main__':
+
+    algorithm = algorithm.TensorACOEVOX(
+        distances = jnp.load('problem/pcb442.npy'),
+        n_ants = 442,
+        n_best = 100,
+        n_iterations = 100,
+        decay = 0.5,
+        alpha = 1,
+        beta = 2
+    )
+    key = jax.random.PRNGKey(42)
+    start_time = time.time()
+    run_tensaco(algorithm, key)
+    end_time = time.time()
+    print(f"time: {end_time - start_time} s")
+```
+
+## Community & Support
+
+---
+
+- Engage in discussions and share your experiences on [GitHub Discussion Board](https://github.com/EMI-Group/evox/discussions).
+- Join our QQ group (ID: 297969717).
+
+## Citing TensorACO
+
+---
+
+If you use TensorACO in your research and want to cite it in your work, please use:
+
+```
+@article{tensoraco,
+  title = {{Tensorized} {Ant} {Colony} {Optimization} {for} {GPU} {Acceleration}},
+  author = {Yang, Luming and Jiang, Tao and Cheng, Ran},
+  booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference (GECCO)},
+  year = {2024}
+}
+```
