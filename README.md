@@ -16,7 +16,7 @@
     <img src="https://img.shields.io/badge/paper-arxiv-red?style=for-the-badge" alt="TensorRVEA Paper on arXiv">
   </a>
 </p>
-Tensorized Ant Colony Optimization (TensorACO) enhances the convergence speed and efficient of large-scale Traveling Salesman Problems (TSP) by incorporating GPU acceleration.  By tensorizing the ant system and path, TensorACO capitalizes on GPU parallelism for accelerated computation. Additionally, the Adaptive Independent Roulette (AdaIR) method enhances the performance by a dynamically strategy. TensorACO is compatible with the [EvoX](https://github.com/EMI-Group/evox/) framewrok.
+Tensorized Ant Colony Optimization (TensorACO) enhances the convergence speed and efficient of large-scale Traveling Salesman Problems (TSP) by incorporating GPU acceleration.  By tensorizing the ant system and path, TensorACO capitalizes on GPU parallelism for accelerated computation. Additionally, the Adaptive Independent Roulette (AdaIR) method enhances the performance by a dynamically strategy. TensorACO is compatible with the <a href="https://github.com/EMI-Group/evox">EvoX</a> framewrok.
 
 ## Key Features
 
