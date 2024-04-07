@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="https://arxiv.org/">
-    <img src="https://img.shields.io/badge/paper-arxiv-red?style=for-the-badge" alt="TensorRVEA Paper on arXiv">
+    <img src="https://img.shields.io/badge/paper-arxiv-red?style=for-the-badge" alt="TensorACO Paper on arXiv">
   </a>
 </p>
 Tensorized Ant Colony Optimization (TensorACO) enhances the convergence speed and efficient of large-scale Traveling Salesman Problems (TSP) by incorporating GPU acceleration.  By tensorizing the ant system and path, TensorACO capitalizes on GPU parallelism for accelerated computation. Additionally, the Adaptive Independent Roulette (AdaIR) method enhances the performance by a dynamically strategy. TensorACO is compatible with the <a href="https://github.com/EMI-Group/evox">EvoX</a> framewrok.
@@ -47,38 +47,47 @@ TensorACO requires:
 ---
 
 ```python
-import time
 import jax
 import jax.numpy as jnp
 import algorithm
-from algorithm import TensorACO
+import problem
 
-
-def run_tensoraco(algorithm, key):
-    state = TensorACO.setup(algorithm, key)
-
-    for i in range(100):
-
-        offspring, state = TensorACO.ask(algorithm, state)
-        state = TensorACO.tell(algorithm, offspring, state)
-        print("The distance is ", state['best_length'])
-
+import evox
 
 if __name__ == '__main__':
 
     algorithm = algorithm.TensorACO(
-        distances = jnp.load('problem/pcb442.npy'),
-        n_ants = 442,
-        n_best = 100,
-        decay = 0.5,
-        alpha = 1,
-        beta = 2
+        distances=jnp.load('problem/pcb442.npy'),
+        node_count=442,
+        n_ants=442,
+        n_best=100,
+        decay=0.5,
+        alpha=1,
+        beta=2
     )
+
+    problem = problem.TSP(
+        jnp.load('problem/pcb442.npy')
+    )
+    monitor = evox.monitors.StdSOMonitor()
+
     key = jax.random.PRNGKey(42)
-    start_time = time.time()
-    run_tensoraco(algorithm, key)
-    end_time = time.time()
-    print(f"time: {end_time - start_time} s")
+
+    workflow = evox.workflows.StdWorkflow(
+        algorithm=algorithm, 
+        problem=problem, 
+        monitor=monitor
+    )
+
+    state = workflow.init(key)
+
+    for i in range(100):
+        state = workflow.step(state)
+        monitor.flush()
+        print(monitor.get_best_fitness())
+
+
+
 ```
 
 ## Community & Support
