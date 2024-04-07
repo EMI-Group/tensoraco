@@ -2,10 +2,12 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jax import jit, vmap
-from functools import partial
+
+from evox import Algorithm, jit_class, State
 
 
-class TensorACO_RW:
+@jit_class
+class TensorACO_RW(Algorithm):
     """
     TensorACO_RW in EvoX framework
     Tensor implementation of the Ant Colony Optimization (ACO) algorithm with Roulette Wheel.
@@ -24,8 +26,9 @@ class TensorACO_RW:
     def __init__(
             self,
             distances,
-            n_ants,
-            n_best,
+            node_count=100,
+            n_ants=100,
+            n_best=10,
             decay=0.5,
             alpha=1,
             beta=2
@@ -33,13 +36,14 @@ class TensorACO_RW:
         """
         Initialize the TensorACO class.
         """
-        self.distances = jnp.array(distances)
+        self.distances = distances
+        self.node_count = node_count
         self.n_ants = n_ants
         self.n_best = n_best
         self.decay = decay
         self.alpha = alpha
         self.beta = beta
-        self.all_inds = jnp.arange(len(distances))
+        self.all_inds = jnp.arange(node_count)
 
     def setup(self, key):
         """
@@ -48,52 +52,50 @@ class TensorACO_RW:
         Args:
             key (int): The seed for the random number generator.
 
-        Returns:
-            dict: The initial state.
         """
 
-        pheromone = jnp.ones(self.distances.shape) / len(self.distances)
-        return {'pheromone': pheromone, 'key': key, 'best_path': jnp.zeros_like(self.all_inds), 'best_length': np.inf}
+        pheromone = jnp.ones((self.node_count, self.node_count)) / self.node_count
+        # if distances is none then add a all zero matrix to distances
+        # jax.lax.cond(self.distances == jnp.array(None), lambda x: jnp.ones((self.node_count,self.node_count)), lambda x: self.distances, self.distances)
+        # print(self.distances)
+        return State(
+            pheromone=pheromone,
+            key=key,
+            best_path=jnp.zeros_like(self.all_inds),
+            best_fitness=np.inf,
+            population=jnp.zeros((self.n_ants, self.node_count))
+        )
 
     def ask(self, state):
-        all_paths, all_lengths, state = self.ant_system_tensorization(state)
-        return (all_paths, all_lengths), state
+        key, new_key, start_key = jax.random.split(state.key, 3)
+        key_batch = jax.random.split(key, self.n_ants)
+        pmat = state.pheromone ** self.alpha * ((1.0 / self.distances) ** self.beta)
+        start_batch = jax.random.randint(start_key, (self.n_ants,), 0, self.node_count)
+        paths = vmap(self._path_construction, in_axes=(0, None, 0))(start_batch, pmat, key_batch)
+        return paths, state.update(key=new_key, population=paths)
 
-    @partial(jit, static_argnums=(0,))
-    def tell(self, offspring, state):
-        """
-        Update the state after each iteration of the ACO algorithm.
-
-        Args:
-            all_paths (jnp.ndarray): The paths found by all ants.
-            all_lengths (jnp.ndarray): The lengths of the paths found by all ants.
-            state (dict): The current state dictionary.
-
-        Returns:
-            dict: The updated state dictionary.
-        """
-        all_paths, all_lengths = offspring
+    def tell(self, state, fitness):
+        all_paths = state.population
+        all_lengths = fitness
         sorted_indices = jnp.argsort(all_lengths)
         top_indices = sorted_indices[:self.n_best]
         top_paths = all_paths[top_indices]
         top_lengths = all_lengths[top_indices]
         shortest_path, shortest_length = all_paths[top_indices[0]], all_lengths[top_indices[0]]
 
-        state['best_path'], state['best_length'] = \
-            jax.lax.cond(shortest_length < state['best_length'],
+        new_best_path, new_best_fitness = \
+            jax.lax.cond(shortest_length < state.best_fitness,
                          lambda x: (shortest_path, shortest_length),
-                         lambda x: (state['best_path'], state['best_length']),
+                         lambda x: (state.best_path, state.best_fitness),
                          None)
 
-        update_pheromone_stack = vmap(self.ant_path_tensorization, in_axes=(0, 0))(top_paths, top_lengths)
+        update_pheromone_stack = vmap(self._ant_path_tensorization, in_axes=(0, 0))(top_paths, top_lengths)
         delta_pheromone = jnp.sum(update_pheromone_stack, axis=0)
 
-        state['pheromone'] = state['pheromone'] * self.decay + delta_pheromone
-        return state
+        new_pheromone = state.pheromone * self.decay + delta_pheromone
+        return state.update(best_path=new_best_path, best_fitness=new_best_fitness, pheromone=new_pheromone)
 
-
-    @partial(jit, static_argnums=(0,))
-    def ant_path_tensorization(self, path, length):
+    def _ant_path_tensorization(self, path, length):
         """
         Calculate the pheromone update for a given path.
 
@@ -112,34 +114,12 @@ class TensorACO_RW:
         edge_indices_x_all = jnp.append(edge_indices_x, edge_indices_y)
         edge_indices_y_all = jnp.append(edge_indices_y, edge_indices_x)
 
-        update_pheromone = jnp.zeros_like(self.distances)
+        update_pheromone = jnp.zeros((self.node_count, self.node_count))
         update_pheromone = update_pheromone.at[edge_indices_x_all, edge_indices_y_all].set(1. / length,
                                                                                            unique_indices=True)
         return update_pheromone
 
-    @partial(jit, static_argnums=(0,))
-    def ant_system_tensorization(self, state):
-        """
-        Generate paths for all ants in the current iteration.
-
-        Args:
-            state (dict): The current state dictionary.
-
-        Returns:
-            tuple: A tuple containing the paths, lengths, and updated state.
-        """
-        key, new_key = jax.random.split(state['key'])
-        key_batch = jax.random.split(key, self.n_ants)
-        state['key'] = new_key
-        pmat = state['pheromone'] ** self.alpha * ((1.0 / self.distances) ** self.beta)
-        ant_ids = jnp.arange(self.n_ants)
-        paths = vmap(self.path_construction, in_axes=(0, None, 0))(ant_ids, pmat, key_batch)
-        dists = jnp.sum(self.distances[paths[:, :-1], paths[:, 1:]], axis=1)
-        dists += self.distances[paths[:, -1], paths[:, 0]]
-        return paths, dists, state
-
-    @partial(jit, static_argnums=(0,))
-    def path_construction(self, start, pmat, key):
+    def _path_construction(self, start, pmat, key):
         """
         Generate a path for a single ant.
 
@@ -152,9 +132,9 @@ class TensorACO_RW:
             jnp.ndarray: The path found by the ant.
         """
 
-        def fun(i, state):
+        def _fun(i, state):
             path, prev, visit = state
-            move = self.selection(pmat[prev], key, visit)
+            move = self._selection(pmat[prev], key, visit)
             path = path.at[i + 1].set(move)
             visit = visit.at[move].set(0)
             return path, move, visit
@@ -162,11 +142,10 @@ class TensorACO_RW:
         path = jnp.ones_like(self.all_inds) * start
         visit = jnp.ones_like(self.all_inds)
         visit = visit.at[start].set(0)
-        path, last_move, _ = jax.lax.fori_loop(0, len(self.distances) - 1, fun, (path, start, visit))
+        path, last_move, _ = jax.lax.fori_loop(0, self.node_count - 1, _fun, (path, start, visit))
         return path
 
-    @partial(jit, static_argnums=(0,))
-    def selection(self, pmat, key, visited):
+    def _selection(self, pmat, key, visited):
         """
         Pick the next move for an ant based on the pheromone matrix and visited nodes.
 
