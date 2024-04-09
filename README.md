@@ -14,7 +14,7 @@
 
 
 <p align="center">
-  <a href="https://arxiv.org/">
+  <a href="[https://arxiv.org/](http://arxiv.org/abs/2404.04895)">
     <img src="https://img.shields.io/badge/paper-arxiv-red?style=for-the-badge" alt="TensorACO Paper on arXiv">
   </a>
 </p>
