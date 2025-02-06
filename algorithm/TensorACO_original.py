@@ -4,6 +4,7 @@ import jax.numpy as jnp
 import numpy as np
 from jax import jit, vmap
 from functools import partial
+import os
 
 
 class TensorACORW:
@@ -216,19 +217,22 @@ class TensorACORW:
 
 
 # Example usage
-distances = np.load('../problem/pcb442.npy')
-n_ants = 442
-n_best = 100
-n_iterations = 100
-decay = 0.5
-alpha = 1
-beta = 2
-prng_key_seed = [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+if __name__ == '__main__':
+    base_path = os.path.dirname(os.path.abspath(__file__))  
+    file_path = os.path.join(base_path, "..", "problem", "pcb442.npy") 
+    distances = np.load(file_path) 
+    n_ants = 442
+    n_best = 100
+    n_iterations = 100
+    decay = 0.5
+    alpha = 1
+    beta = 2
+    prng_key_seed = [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
 
-for i in range(10):
-    prng_key = prng_key_seed[i]
-    print("PRNG_key:", prng_key)
-    print("Iteration: ", i)
-    taco = TensorACO(distances, n_ants, n_best, n_iterations, decay, alpha, beta)
-    answer = taco.run(prng_key)
-    print(f"Shortest path: {answer}")
+    for i in range(10):
+        prng_key = prng_key_seed[i]
+        # print("PRNG_key:", prng_key)
+        print("Iteration: ", i)
+        taco = TensorACORW(distances, n_ants, n_best, n_iterations, decay, alpha, beta)
+        answer = taco.run(prng_key)
+        print(f"Shortest path: {answer}")

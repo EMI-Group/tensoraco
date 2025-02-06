@@ -1,6 +1,6 @@
 import numpy as np
 import random
-
+import os
 import time
 
 time_rec = []
@@ -84,9 +84,12 @@ def np_choice(a, size, p=None):
 
 
 # Example usage
-np.random.seed(7)
-distances = np.load('../problem/pcb442.npy')
-print(distances)
-aco = AntColonyOptimizer(distances, n_ants=159, n_best=16, n_iterations=1000, decay=0.5, alpha=1, beta=2)
-shortest_path = aco.run()
-print(f"Shortest path: {shortest_path}")
+if __name__ == '__main__':
+    np.random.seed(7)
+    base_path = os.path.dirname(os.path.abspath(__file__))  
+    file_path = os.path.join(base_path, "..", "problem", "pcb442.npy") 
+    distances = np.load(file_path) 
+    # print(distances)
+    aco = AntColonyOptimizer(distances, n_ants=159, n_best=16, n_iterations=1000, decay=0.5, alpha=1, beta=2)
+    shortest_path = aco.run()
+    print(f"Shortest path: {shortest_path}")
