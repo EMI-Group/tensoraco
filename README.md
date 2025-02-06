@@ -38,9 +38,9 @@ Tensorized Ant Colony Optimization (TensorACO) enhances the convergence speed an
 TensorACO requires:
 
 - Python (version >= 3.7)
-- evox (version >= 0.7.0)
-- JAX (version >= 0.4.16)
-- jaxlib (version >= 0.3.0)
+- evox (version = 0.8.0)
+- JAX (version = 0.4.34)
+- jaxlib (version = 0.4.34)
 - (Optional) CUDA and cuDNN for GPU acceleration
 
 ## Example Usage
@@ -52,13 +52,17 @@ import jax
 import jax.numpy as jnp
 import algorithm
 import problem
-
+import os
 import evox
+
 
 if __name__ == '__main__':
 
+    base_path = os.path.dirname(os.path.abspath(__file__))  
+    file_path = os.path.join(base_path, "problem", "pcb442.npy") 
+
     algorithm = algorithm.TensorACO(
-        distances=jnp.load('problem/pcb442.npy'),
+        distances=jnp.load(file_path),
         node_count=442,
         n_ants=442,
         n_best=100,
@@ -68,24 +72,25 @@ if __name__ == '__main__':
     )
 
     problem = problem.TSP(
-        jnp.load('problem/pcb442.npy')
+        jnp.load(file_path)
     )
     monitor = evox.monitors.StdSOMonitor()
 
     key = jax.random.PRNGKey(42)
 
     workflow = evox.workflows.StdWorkflow(
-        algorithm=algorithm, 
-        problem=problem, 
+        algorithm=algorithm,
+        problem=problem,
         monitor=monitor
     )
 
     state = workflow.init(key)
 
-    for i in range(100):
+    for i in range(10):
         state = workflow.step(state)
         monitor.flush()
-        print(monitor.get_best_fitness())
+        best_fitness = monitor.get_best_fitness()
+        print("Iteration:", i, "Best Fitness:", best_fitness)
 
 
 
