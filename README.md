@@ -38,9 +38,9 @@ Tensorized Ant Colony Optimization (TensorACO) enhances the convergence speed an
 TensorACO requires:
 
 - Python (version >= 3.7)
-- evox (version = 0.8.0)
-- JAX (version = 0.4.34)
-- jaxlib (version = 0.4.34)
+- evox (version == 0.8.0)
+- JAX (version == 0.4.34)
+- jaxlib (version == 0.4.34)
 - (Optional) CUDA and cuDNN for GPU acceleration
 
 ## Example Usage
