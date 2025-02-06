@@ -10,7 +10,7 @@ from evox import Algorithm, jit_class, State
 
 
 @jit_class
-class TensorACO_EvoX_AdaIR(Algorithm):
+class TensorACO(Algorithm):
     """
     TensorACO_AdaIR in Evox framework
     Tensor implementation of the Ant Colony Optimization (ACO) algorithm with Adaptive Independent Roulette.
